@@ -3,9 +3,9 @@
  *
  * Leland Wilkinson and Anushka Anand (University of Illinois at Chicago)
  * This program accompanies the following paper:
- 
- * Wilkinson L., Anand, A., and Grossman, R. (2006). High-Dimensional visual analytics: 
- *   Interactive exploration guided by pairwise views of point distributions. 
+
+ * Wilkinson L., Anand, A., and Grossman, R. (2006). High-Dimensional visual analytics:
+ *   Interactive exploration guided by pairwise views of point distributions.
  *   IEEE Transactions on Visualization and Computer Graphics, November/December 2006 (Vol. 12, No. 6) pp. 1363-1372.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -19,7 +19,7 @@
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
-package scagnostics;
+package RScag.scagnostics;
 
 public class BinnedData {
     private int[] x = null;

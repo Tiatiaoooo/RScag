@@ -19,7 +19,7 @@
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
-package scagnostics;
+package RScag.scagnostics;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -36,15 +36,6 @@ public class Binner {
 
         int n = x.length;
 
-        // scaling constants
-
-        double con1 = .25;
-        double con2 = 1. / 3.;
-        double c1 = (double) (nBins - 1);
-        double c2 = c1 / Math.sqrt(3.);
-        int jinc = nBins;
-        int iinc = 2 * nBins;
-
         int mBins = nBins+20;
         int nBin = mBins*mBins;
 
@@ -60,79 +51,16 @@ public class Binner {
             x_inbin[i] = new Vector<Double>();
             y_inbin[i] = new Vector<Double>();
         }
-
-        // fill bins
-        /*
-        for (int i = 0; i < n; i++) {
+        for (int i=0; i<n; i++)
+        {
             if (Double.isNaN(x[i])) continue;
             if (Double.isNaN(y[i])) continue;
-            double sx = c1 * x[i];
-            double sy = c2 * y[i];
-            int i1 = (int) (sy + .5);
-            int j1 = (int) (sx + .5);
-            double dy = sy - (double) i1;
-            double dx = sx - (double) j1;
-            double dist1 = dx * dx + 3. * dy * dy;
-            int m;
-            if (dist1 < con1) {
-                m = i1 * iinc + j1;
-            } else if (dist1 > con2) {
-                m = (int) sy * iinc + (int) sx + jinc;
-            } else {
-                int i2 = (int) sy;
-                int j2 = (int) sx;
-                dy = sy - (double) i2 - .5;
-                dx = sx - (double) j2 - .5;
-                double dist2 = dx * dx + 3. * dy * dy;
-                if (dist1 <= dist2) {
-                    m = i1 * iinc + j1;
-                } else {
-                    m = i2 * iinc + j2 + jinc;
-                }
-            }
-            count[m]++;
-            xbin[m] += (x[i] - xbin[m]) / count[m];
-            ybin[m] += (y[i] - ybin[m]) / count[m];
-        }*/
-        //我们的binning
-    /*for(int j=0 ; j<nBin ; j++) {
-        double x_l = (j%mBins)*1./mBins;
-        double x_r = (j%mBins+1)*1./mBins;
-        double y_l = (j/mBins)*1./mBins;
-        double y_r = (j/mBins+1)*1./mBins;
-        for (int i = 0; i < n; i++) {
-            if (Double.isNaN(x[i])) continue;
-            if (Double.isNaN(y[i])) continue;
-            if(x[i]>=x_l&&x[i]<x_r&&y[i]>=y_l&&y[i]<y_r)
-            {
-                x_inbin[j].add(x[i]);
-                y_inbin[j].add(y[i]);
-            }
-            else if(x[i]==1&&!nodeInBin(x_inbin,y_inbin,x[i],y[i])){
-                int location = mBins*((int)Math.floor(y[i]*mBins)+1)-1;
-                    x_inbin[location].add(x[i]);
-                    y_inbin[location].add(y[i]);
-            }
-            else if(y[i]==1&&!nodeInBin(x_inbin,y_inbin,x[i],y[i]))
-            {
-                int location = mBins*((int)Math.floor(x[i]*mBins)+1)-1;
-                    x_inbin[location].add(x[i]);
-                    y_inbin[location].add(y[i]);
-            }
-        }
-    }*/
-
-    for (int i=0; i<n; i++)
-    {
-        if (Double.isNaN(x[i])) continue;
-        if (Double.isNaN(y[i])) continue;
-        if(x[i]==1){
+            if(x[i]==1){
             if(y[i]==1){
                 x_inbin[nBin-1].add(x[i]);
                 y_inbin[nBin-1].add(y[i]);
             }else {
                 int location = mBins * ((int) Math.floor(y[i] * mBins) + 1) - 1;
-//                System.out.println("x_i=" + x[i] + "\ty_i=" + y[i]);
                 x_inbin[location].add(x[i]);
                 y_inbin[location].add(y[i]);
             }
@@ -151,14 +79,7 @@ public class Binner {
             y_inbin[location].add(y[i]);
         }
     }
-        int sum = 0;
-    for(int i=0; i<nBin; i++)
-    {
-        sum+=x_inbin[i].size();
-    }
-//    System.out.println("sum="+sum);
     int m = 0;
-//    System.out.println("nBin="+nBin);
     for(int i=0 ; i<nBin ; i++)
     {
         if(x_inbin[i].size()>0)
@@ -169,9 +90,8 @@ public class Binner {
                 ybin[m] = y_inbin[i].get(0);
                 count[m] = 1;
                 m++;
-            }else{//
+            }else{
                 int scount = x_inbin[i].size()/scale;
-//                System.out.println("scount="+scount+"\tx_size="+x_inbin[i].size());
                 if(scount==0)//keep one node
                 {
                     xbin[m] = x_inbin[i].get(randSelect(x_inbin[i].size(),1)[0]);
@@ -183,7 +103,6 @@ public class Binner {
                     int[] select = randSelect(x_inbin[i].size(), scount);
                     for(int j=0 ; j<scount ; j++)
                     {
-//                        System.out.println("j="+j+"\ti="+i+"\tm="+m);
                         xbin[m] = x_inbin[i].get(select[j]);
                         ybin[m] = y_inbin[i].get(select[j]);
                         count[m] = (double)(x_inbin[i].size())/scount;
@@ -206,51 +125,7 @@ public class Binner {
         System.arraycopy(count, 0, tcount, 0, nBin);//copy count to tcount
         System.arraycopy(xbin, 0, xtbin, 0, nBin);
         System.arraycopy(ybin, 0, ytbin, 0, nBin);
-//        System.out.println("nBin="+nBin+"\tsum="+sumCount(tcount));
-//        System.out.println(Arrays.toString(ytbin));
-//        System.out.println(Arrays.toString(tcount));
         return new BinnedData(xtbin, ytbin, tcount);
-    }
-    private boolean nodeInBin(Vector<Double>[] xbin, Vector<Double>[] ybin, double elex, double eley)
-    {
-        boolean isContain = false;
-        int len = xbin.length;
-        for(int i=0; i<len; i++)
-        {
-            int sz = xbin[i].size();
-            if(sz>0)
-            {
-                for(int j=0; j<sz; j++)
-                {
-                    if(xbin[i].get(j)==elex&&ybin[i].get(j)==eley)
-                    {
-                        isContain = true;
-                    }
-                }
-            }
-        }
-        return isContain;
-    }
-    private boolean containEle (Vector<Double> vx, Vector<Double> vy, double elex, double eley)
-    {
-        boolean isContain = false;
-        int len = vx.size();
-        for(int i=0; i<len; i++)
-        {
-            if(vx.get(i)==elex&&vy.get(i)==eley)
-            {
-                isContain = true;
-            }
-        }
-        return isContain;
-    }
-    private double sumCount(double[] con){
-        double sum=0;
-        for(int i=0; i<con.length ;i++)
-        {
-            sum+=con[i];
-        }
-        return sum;
     }
     private int[] randSelect (int n, int m)
     {

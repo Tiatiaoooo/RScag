@@ -19,7 +19,7 @@
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
-package scagnostics;
+package RScag.scagnostics;
 
 import javax.swing.text.html.HTMLDocument;
 import java.util.*;
@@ -35,10 +35,8 @@ class Node {
     protected boolean isVisited = false;
     protected int mstDegree;
     protected int pointID;
-    protected int nodeID;
     protected int degree;
     protected boolean isVisitedonGraph=false;
-    protected boolean isOver=false;
 
     protected Node(int x, int y, double count, int pointID) {
         this.x = x;
@@ -96,77 +94,6 @@ class Node {
             }
         }
         return degree;
-    }
-    protected int getOriMstDegree(){
-        degree=0;
-        if (neighbors!=null)
-        {
-            Iterator it = neighbors.iterator();
-            while (it.hasNext())
-            {
-                Edge e = (Edge)it.next();
-                if (e.onoriMST)
-                {
-                    degree++;
-                }
-            }
-        }
-        return degree;
-    }
-    public Vector<Edge> findPathto(Node p){
-        Stack<Node> path = new Stack<>();
-        path.push(this);
-        this.isVisitedonGraph = true;
-        dfsLoop(p,path);
-        Vector<Edge> edge_path = new Vector<>();
-        for(int i=1;i<path.size();i++)
-        {
-            Edge cur_edge = new Edge(path.get(i-1),path.get(i));
-            edge_path.add(cur_edge);
-        }
-        return edge_path;
-    }
-    public boolean dfsLoop(Node target,Stack<Node> path){
-        boolean findtarget = false;
-        if(path.empty())
-        {
-            return findtarget;
-        }
-        Node p = path.peek();
-        if(p.distToNode(target.x,target.y)==0)
-        {
-            findtarget = true;
-        }
-        Iterator it = p.neighbors.iterator();
-        List<Node> neigh_node=new ArrayList<>();
-        while (it.hasNext())
-        {
-            Edge e = (Edge) it.next();
-            if(e.onoriMST)
-            {
-                Node p2 = e.otherNode(p);
-                neigh_node.add(p2);
-            }
-        }
-        int nei_sz = neigh_node.size();
-        int i;
-        for(i =0 ;i<nei_sz;i++){
-            Node cur_nd = neigh_node.get(i);
-            if(!cur_nd.isVisitedonGraph)
-            {
-                path.push(cur_nd);
-                cur_nd.isVisitedonGraph=true;
-                findtarget=dfsLoop(target,path);
-            }if(findtarget)
-            {
-                break;
-            }
-        }
-        if(!findtarget)
-        {
-            path.pop();
-        }
-        return findtarget;
     }
     public int getMSTChildren(double cutoff, double[] maxLength, Vector<Node> childNodes, Edge[] maxEdge) {
         int count = 0;

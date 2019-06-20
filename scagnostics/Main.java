@@ -3,9 +3,9 @@
  *
  * Leland Wilkinson and Anushka Anand (University of Illinois at Chicago)
  * This program accompanies the following paper:
- 
- * Wilkinson L., Anand, A., and Grossman, R. (2006). High-Dimensional visual analytics: 
- *   Interactive exploration guided by pairwise views of point distributions. 
+
+ * Wilkinson L., Anand, A., and Grossman, R. (2006). High-Dimensional visual analytics:
+ *   Interactive exploration guided by pairwise views of point distributions.
  *   IEEE Transactions on Visualization and Computer Graphics, November/December 2006 (Vol. 12, No. 6) pp. 1363-1372.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -19,11 +19,10 @@
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
-package scagnostics;
+package RScag.scagnostics;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class Main {
@@ -32,18 +31,16 @@ public class Main {
         int numBins = 50;    // user setting for number of bins
         int maxBins = 1000;  // user setting for maximum number of nonempty bins allowed (maxBins >= numBins*numBins)
 
-
-        String fold_path = "D://workspace//vis//vis2019//scagnostics//code//matlab//cluster//data1//databk//";
-        File[] files = getFileList(fold_path,".csv");
-        int file_len = files.length;
-        for(int i=0 ; i < file_len ; i++)
-        {
-            System.out.println(files[i].getName());
-            double[][] points = getData(files[i]);
-            double[][] scagnostics = computeScagnostics(points, numBins, maxBins, fold_path , files[i].getName());
+        String fold_path = "Rscag//data//";
+        File[] files = getFileList(fold_path, ".csv");
+        for (File file : files) {
+            System.out.println(file.getName());
+            double[][] points = getData(file);
+            double[][] scagnostics = computeScagnostics(points, numBins, maxBins);
             System.out.println(Arrays.toString(scagnostics[0]));
         }
     }
+
     private static File[] getFileList(String path, String suffix) {
         suffix = suffix.toLowerCase();
         if (!suffix.startsWith(".")) {
@@ -59,6 +56,7 @@ public class Main {
         });
         return files;
     }
+
     private static double[][] getData(File fname) {
         java.io.BufferedReader fin;
         try {
@@ -146,7 +144,7 @@ public class Main {
         return source;
     }
 
-    private static double[][] computeScagnostics(double[][] points, int numBins, int maxBins, String path, String fileName) {
+    private static double[][] computeScagnostics(double[][] points, int numBins, int maxBins) {
         normalizePoints(points);
         int nDim = points.length;
         int numCells = nDim * (nDim - 1) / 2;
@@ -155,41 +153,11 @@ public class Main {
         for (int i = 1; i < nDim; i++) {
             for (int j = 0; j < i; j++) {
                 Scagnostics s = new Scagnostics(points[j], points[i], numBins, maxBins);
-                scagnostics[k] = s.compute(path, fileName);
+                scagnostics[k] = s.compute();
                 k++;
             }
         }
         return scagnostics;
-    }
-    private static void test(){
-        //init
-        Node p1 = new Node(0,0,1,0);
-        Node p2 = new Node(1,1,1,1);
-        Node p3 = new Node(2,2,1,2);
-        Node p4 = new Node(2,-2,1,3);
-
-        Edge e1 = new Edge(p1,p2);
-        p1.setNeighbor(e1);
-        p2.setNeighbor(e1);
-        e1.onoriMST=true;
-
-        Edge e2 =new Edge(p2,p3);
-        p2.setNeighbor(e2);
-        p3.setNeighbor(e2);
-        e2.onoriMST=true;
-
-        Edge e3=new Edge(p2,p4);
-        p2.setNeighbor(e3);
-        p4.setNeighbor(e3);
-        e3.onoriMST=true;
-
-        Vector<Edge> test=p1.findPathto(p2);
-        int test_len = test.size();
-        for(int i=0;i<test_len;i++)
-        {
-            System.out.println(test.get(i).weight);
-        }
-
     }
 
     private static void normalizePoints(double[][] points) {
@@ -197,41 +165,15 @@ public class Main {
         double[] max = new double[points.length];
         for (int i = 0; i < points.length; i++)
             for (int j = 0; j < points[0].length; j++) {
-		if (j == 0)
-		    max[i] = min[i] = points[i][0];
-		else if (min[i] > points[i][j])
-		    min[i] = points[i][j];
-		else if (max[i] < points[i][j])
-		    max[i] = points[i][j];
+                if (j == 0)
+                    max[i] = min[i] = points[i][0];
+                else if (min[i] > points[i][j])
+                    min[i] = points[i][j];
+                else if (max[i] < points[i][j])
+                    max[i] = points[i][j];
             }
         for (int i = 0; i < points.length; i++)
             for (int j = 0; j < points[0].length; j++)
                 points[i][j] = (points[i][j] - min[i]) / (max[i] - min[i]);
-    }
-
-    private static void computeTests(double[][] scagnostics, boolean[] outliers, boolean[] exemplars) {
-        double[][] test = getData(new File("scagnostics.txt"));
-
-        for (int i = 0; i < test.length; i++) {
-            for (int j = 0; j < test[0].length; j++) {
-                if (scagnostics[j][i] != test[i][j]) System.out.println("error " + i + " " + j);
-            }
-        }
-
-        for (int i = 0; i < outliers.length; i++) {
-            if (i == 1 || i == 2 || i == 34 || i == 90) {
-                if (!outliers[i]) System.out.println("error " + i);
-            } else {
-                if (outliers[i]) System.out.println("error " + i);
-            }
-        }
-
-        for (int i = 0; i < exemplars.length; i++) {
-            if (i == 13 || i == 95 || i == 118) {
-                if (!exemplars[i]) System.out.println("error " + i);
-            } else {
-                if (exemplars[i]) System.out.println("error " + i);
-            }
-        }
     }
 }

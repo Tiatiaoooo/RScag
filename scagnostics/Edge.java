@@ -19,7 +19,7 @@
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
-package scagnostics;
+package RScag.scagnostics;
 
 import java.util.*;
 
@@ -156,16 +156,5 @@ public class Edge {
             maxEdge[1] = maxEdge1[0];
         }
         return Math.min(count1,count2);
-    }
-
-    protected boolean inEdgeList(List<Edge> targetEdgeList) {
-        int sz = targetEdgeList.size();
-        boolean isIn = false;
-        for (int i = 0; i < sz; i++) {
-            if (this.isEquivalent(targetEdgeList.get(i))) {
-                isIn = true;
-            }
-        }
-        return isIn;
     }
 }

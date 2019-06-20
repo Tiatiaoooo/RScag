@@ -19,7 +19,7 @@
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
-package scagnostics;
+package RScag.scagnostics;
 
 import javax.swing.plaf.basic.BasicScrollPaneUI;
 import javax.swing.text.html.HTMLDocument;
@@ -71,10 +71,9 @@ public class Scagnostics {
         bdata = b.binHex(x, y, numBins, 3);
     }
 
-    public double[] compute(String path, String fileName) {
+    public double[] compute() {
         px = bdata.getXData();
         py = bdata.getYData();
-//        outputNode("D://workspace//vis//vis2019//scagnostics//code//matlab//cluster//data1//our//data//"+fileName,px,py);
         if (px.length < 3)
             return null;
         int xx = px[0];
@@ -89,18 +88,16 @@ public class Scagnostics {
             return null;
 
 
-        findOutliers(bdata,fileName);
+        findOutliers(bdata);
         double[] result = new double[numScagnostics];
         result[OUTLYING] = rel_outlying;
         result[CLUMPY] = rel_clumpy;
-        for(int i=0; i<px.length; i++)
-        {
-            if(subCluster[i].size()!=0)
-            {
+        for (int i = 0; i < px.length; i++) {
+            if (subCluster[i].size() > 3) {
                 allOutlierExcept(subCluster[i]);
-                double weight = (double) subCluster[i].size()/px.length;
+                double weight = (double) subCluster[i].size() / px.length;
                 clear();
-                computeDT(px,py);
+                computeDT(px, py);
                 computeMST();
                 computeAlphaGraph();
                 computeTotalCount();
@@ -108,19 +105,16 @@ public class Scagnostics {
                 computeAlphaPerimeter();
                 computeHullArea();
                 computeHullPerimeter();
-                //之后计算对应的量，并根据当前点的数量
-                double[] tmp_re = computeMeasures();
-                result[SKEWED] += tmp_re[SKEWED]*weight;
-                result[CONVEX] = tmp_re[CONVEX]*weight;
-                result[SKINNY] = tmp_re[SKINNY]*weight;
-                result[STRINGY] = tmp_re[STRINGY]*weight;
-                result[STRIATED] = tmp_re[STRIATED]*weight;
-                result[SPARSE] = tmp_re[SPARSE]*weight;
-                result[MONOTONIC] = tmp_re[MONOTONIC]*weight;
+                double[] tmpResult = computeMeasures();
+                result[SKEWED] += tmpResult[SKEWED] * weight;
+                result[CONVEX] = tmpResult[CONVEX] * weight;
+                result[SKINNY] = tmpResult[SKINNY] * weight;
+                result[STRINGY] = tmpResult[STRINGY] * weight;
+                result[STRIATED] = tmpResult[STRIATED] * weight;
+                result[SPARSE] = tmpResult[SPARSE] * weight;
+                result[MONOTONIC] = tmpResult[MONOTONIC] * weight;
             }
         }
-//        outputMSTedge("D://workspace//vis//vis2019//scagnostics//code//matlab//cluster//data1//our//runts//runts_"+fileName,runtsEdges);
-//        outputMSTedge("D://workspace//vis//vis2019//scagnostics//code//matlab//cluster//data1//our//maxEdge//max_"+fileName,maxEdges);
         return result;
     }
 
@@ -218,27 +212,7 @@ public class Scagnostics {
         mstEdges.clear();
     }
 
-    private void outputSubClu() {
-        int count = 0;
-        for (int i = 0; i < px.length; i++) {
-            int tmp_size = subCluster[i].size();
-            if (tmp_size == 0) {
-                count++;
-            }
-            if (tmp_size != 0) {
-                System.out.println("cluster" + i + "is:");
-                for (int j = 0; j < tmp_size; j++) {
-                    System.out.print(subCluster[i].get(j).pointID + "\t");
-                }
-                System.out.println();
-            }
-        }
-        if (count == px.length) {
-            System.out.println("分出的类为空");
-        }
-    }
-
-    private void findOutliers(BinnedData bdata, String fileName) {
+    private void findOutliers(BinnedData bdata) {
         this.counts = bdata.getCounts();
         isOutlier = new boolean[px.length];
         isOutlierbackup = new boolean[px.length];
@@ -254,7 +228,6 @@ public class Scagnostics {
 
         computeDT(px, py);
         computeMST();
-//        outputMSTedge("D://workspace//vis//vis2019//scagnostics//code//matlab//cluster//data1//our//mst//mst_"+fileName,mstEdges);
         sortedOriginalMSTLengths = getSortedMSTEdgeLengths();
         computeTotalOriginalMSTLengths();
         for (int i = 0; i < nodes.size(); i++) {
@@ -273,68 +246,52 @@ public class Scagnostics {
         sortedOriginalMSTLengths = getSortedMSTEdgeLengths();
 
         if (subCluster[1].size() == 0) {
-            /*
-            int tmp_size = sortedOriginalMSTLengths.length;
-            int n75 = 3 * tmp_size / 4;
-            double avg_all = getMeanValue(0, tmp_size, sortedOriginalMSTLengths);
-            double avg_25 = getMeanValue(n75, tmp_size, sortedOriginalMSTLengths);
-            rel_clumpy = avg_all / avg_25;*/
             System.out.println("single cluster.");
-            double cutoff = computeCutoff(sortedOriginalMSTLengths);
-            getRuntsAndMaxEdgeInOneClu(cutoff);
+            getRuntsAndMaxEdgeInOneClu();
             rel_clumpy = maxValues.get(0);
-        }
-        else{
+        } else {
             int runt_sz = runtsEdges.size();
             int sum = 0;
             Vector<Integer> Counts = new Vector<Integer>();
-            for(int i=0; i<runt_sz; i++)
-            {
+            for (int i = 0; i < runt_sz; i++) {
                 runtsEdges.get(i).onMST = false;
             }
-            for(int i=0; i<runt_sz; i++)
-            {
+            for (int i = 0; i < runt_sz; i++) {
                 Node p1 = runtsEdges.get(i).p1;
                 Node p2 = runtsEdges.get(i).p2;
                 int index1 = findClosestClu(p1);
                 int index2 = findClosestClu(p2);
                 int count1 = subCluster[index1].size();
                 int count2 = subCluster[index2].size();
-                Counts.add((count1+count2));
-                sum+=(count1+count2);
+                Counts.add((count1 + count2));
+                sum += (count1 + count2);
             }
-            for(int i=0; i<runt_sz; i++)
-            {
-                rel_clumpy +=(maxValues.get(i)*Counts.get(i))/sum;
+            for (int i = 0; i < runt_sz; i++) {
+                rel_clumpy += (maxValues.get(i) * Counts.get(i)) / sum;
             }
         }
     }
-    private int findClosestClu(Node p)
-    {
+
+    private int findClosestClu(Node p) {
         int index = 0;
         //find the nearest node
         int nod_sz = nodes.size();
-        Node nearest_nd = (Node)nodes.get(0);
+        Node nearest_nd = (Node) nodes.get(0);
         double nearDis = Double.MAX_VALUE;
-        for(int i=0; i<nod_sz; i++)
-        {
+        for (int i = 0; i < nod_sz; i++) {
             Node cur_nd = (Node) nodes.get(i);
-            double distance = cur_nd.distToNode(p.x , p.y);
-            if(distance<nearDis)
-            {
+            double distance = cur_nd.distToNode(p.x, p.y);
+            if (distance < nearDis) {
                 nearest_nd = cur_nd;
                 nearDis = distance;
             }
         }
         int clu_sz = subCluster.length;
-        for(int i=0; i<clu_sz; i++)
-        {
+        for (int i = 0; i < clu_sz; i++) {
             int cur_clu_sz = subCluster[i].size();
-            for(int j=0; j<cur_clu_sz; j++)
-            {
+            for (int j = 0; j < cur_clu_sz; j++) {
                 Node cur_nd = subCluster[i].get(j);
-                if(cur_nd.distToNode(nearest_nd.x,nearest_nd.y)==0)
-                {
+                if (cur_nd.distToNode(nearest_nd.x, nearest_nd.y) == 0) {
                     index = i;
                     break;
                 }
@@ -342,6 +299,7 @@ public class Scagnostics {
         }
         return index;
     }
+
     private boolean[] deepClone(boolean[] target) {
         boolean[] rel = new boolean[px.length];
         for (int i = 0; i < px.length; i++) {
@@ -349,8 +307,6 @@ public class Scagnostics {
         }
         return rel;
     }
-
-    private int clu = 0;
 
     private void departNodes(int index) {
         if (checkSingleClu(index)) {
@@ -378,108 +334,33 @@ public class Scagnostics {
 
     }
 
-    private void findEdgeNotOnPath(List<Edge> cutEdges, List<Edge> pathEdges) {
-        int cut_len = cutEdges.size();
-        int path_len = pathEdges.size();
-        for (int i = 0; i < cut_len; i++) {
-            Edge cur_edge = cutEdges.get(i);
-
-            if (!cur_edge.inEdgeList(pathEdges) && !outlierEdges.contains(cur_edge)) {
-//                    System.out.println("cur_edge_p1:"+cur_edge.p1.pointID+"\tcur_edge_p2:"+cur_edge.p2.pointID+"\tpath_edge_p1:"
-//                            +pathEdges.get(j).p1.pointID+"\tpath_edge_p2:"+pathEdges.get(j).p2.pointID);
-                rel_outlying += cur_edge.weight / totalOriginalMSTLengths;
-                outlierEdges.add(cur_edge);
-
-                Node p1 = cur_edge.p1;
-                Node p2 = cur_edge.p2;
-                if (p1.getMstDegree() >= 1) {
-                    isOutlier[p2.pointID] = true;
-                    isOutlierbackup[p2.pointID] = true;
-                    Vector<Node> p1_nd = new Vector<>();
-                    double[] maxLen = new double[1];
-                    Edge[] maxEdge1 = new Edge[1];
-                    p1.getMSTChildren(cur_edge.weight, maxLen, p1_nd, maxEdge1);
-                    int p1_index = addNodesToSubClu(p1_nd);
-                    departNodes(p1_index);
-                } else if (p2.getMstDegree() >= 1) {
-                    isOutlier[p1.pointID] = true;
-                    isOutlierbackup[p1.pointID] = true;
-                    Vector<Node> p2_nd = new Vector<>();
-                    double[] maxLen = new double[1];
-                    Edge[] maxEdge2 = new Edge[1];
-                    p2.getMSTChildren(cur_edge.weight, maxLen, p2_nd, maxEdge2);
-                    int p2_index = addNodesToSubClu(p2_nd);
-                    departNodes(p2_index);
-                } else {
-                    isOutlier[p1.pointID] = true;
-                    isOutlierbackup[p1.pointID] = true;
-                    isOutlier[p2.pointID] = true;
-                    isOutlierbackup[p2.pointID] = true;
-                }
-
-            }
-
-
-        }
-    }
-
-    private List<Edge> findAllPathEdge(Vector<Node> connectPoints, Vector<Node> cutPoints) {
-        List<Edge> pathEdges = new ArrayList<>();
-        int connect_len = connectPoints.size();
-        int cut_len = cutPoints.size();
-        for (int i = 0; i < connect_len; i++) {
-            for (int j = i + 1; j < connect_len; j++) {
-
-                for (int k = 0; k < cut_len; k++) {
-                    cutPoints.get(k).isVisitedonGraph = false;
-                    cutPoints.get(k).isOver = false;
-                }
-                Vector<Edge> tmp = connectPoints.get(i).findPathto(connectPoints.get(j));
-                int tmp_len = tmp.size();
-                for (int k = 0; k < tmp_len; k++) {
-                    if (!pathEdges.contains(tmp.get(k))) {
-                        pathEdges.add(tmp.get(k));
-                    }
-                }
-            }
-        }
-        return pathEdges;
-    }
-
     public void outputResult(String filename, double[] scagnosticsRel) {
-        Node p1, p2;
-        double temp;
         String strtemp;
         File file = new File(filename);
-        //System.out.println("Output MSTEdge!\tmst_size="+mstEdges.size());
         for (int i = 0; i < numScagnostics; i++) {
-            temp = scagnosticsRel[i];
             strtemp = scagnosticsLabels[i] + "," + scagnosticsRel[i];
             writeToFile(file, filename, strtemp);
         }
     }
+
     public void outputNode(String filename, int[] x, int[] y) {
-        Node p1, p2;
-        Edge temp;
         String strtemp;
         File file = new File(filename);
-        //System.out.println("Output MSTEdge!\tmst_size="+mstEdges.size());
         for (int i = 0; i < x.length; i++) {
-            strtemp = x[i]+ "," + y[i];
+            strtemp = x[i] + "," + y[i];
             writeToFile(file, filename, strtemp);
         }
     }
+
     public void outputMSTedge(String filename, List<Edge> targetEdges) {
         Node p1, p2;
         Edge temp;
         String strtemp;
         File file = new File(filename);
-        //System.out.println("Output MSTEdge!\tmst_size="+mstEdges.size());
         for (int i = 0; i < targetEdges.size(); i++) {
             temp = (Edge) targetEdges.get(i);
             p1 = temp.p1;
             p2 = temp.p2;
-//            strtemp = p1.x + "\t" + p1.y + "\t" + p2.x + "\t" + p2.y;
             strtemp = p1.x + "," + p1.y + "," + p2.x + "," + p2.y;
             writeToFile(file, filename, strtemp);
         }
@@ -502,7 +383,7 @@ public class Scagnostics {
     public static boolean writeFileContent(String filepath, String newstr)
             throws IOException {
         Boolean bool = false;
-        String filein = newstr + "\r\n";// 新写入的行，换行
+        String filein = newstr + "\r\n";
         String temp = "";
 
         FileInputStream fis = null;
@@ -511,8 +392,7 @@ public class Scagnostics {
         FileOutputStream fos = null;
         PrintWriter pw = null;
         try {
-            File file = new File(filepath);// 文件路径(包括文件名称)
-            // 将文件读入输入流
+            File file = new File(filepath);
             fis = new FileInputStream(file);
             isr = new InputStreamReader(fis);
             br = new BufferedReader(isr);
@@ -553,39 +433,6 @@ public class Scagnostics {
             }
         }
         return bool;
-    }
-
-    private double getCurMstLen(double[] sortMst) {
-        double sum = 0;
-        int tmp_size = sortMst.length;
-        for (int i = 0; i < tmp_size; i++) {
-            sum += sortMst[i];
-        }
-        return sum;
-    }
-
-    private boolean checkSubClu() {
-        double[] sortedPeeledMSTLengths;
-        boolean allBeSingle = true;
-        for (int i = 0; i < px.length; i++) {
-            if (subCluster[i].size() != 0) {
-
-                allOutlierExcept(subCluster[i]);
-                computeDT(px, py);
-                sortedPeeledMSTLengths = getSortedMSTEdgeLengths();
-                double cutoff = computeCutoff(sortedPeeledMSTLengths);
-
-                int tmp_size = sortedPeeledMSTLengths.length;
-                for (int j = 0; j < tmp_size; j++) {
-                    if (sortedPeeledMSTLengths[j] > cutoff) {
-                        allBeSingle = false;
-                    }
-                }
-
-            }
-        }
-
-        return allBeSingle;
     }
 
     private boolean checkSingleClu(int index) {
@@ -659,21 +506,17 @@ public class Scagnostics {
         }
     }
 
+    // compute measures except outlying and clumpy
     private double[] computeMeasures() {
         double[] results = new double[numScagnostics];
         // Do not change order of these calls!
-        results[OUTLYING] = rel_outlying;
-        results[CLUMPY] = rel_clumpy;
-        results[SKEWED] = computeMSTEdgeLengthSkewnessMeasureChange();
+        results[SKEWED] = computeMSTEdgeLengthSkewnessMeasure();
         results[CONVEX] = computeConvexityMeasure();
         results[SKINNY] = computeSkinnyMeasure();
         results[STRINGY] = computeStringyMeasure();
         results[STRIATED] = computeStriationMeasure();
         results[SPARSE] = computeSparsenessMeasure();
         results[MONOTONIC] = computeMonotonicityMeasure();
-//      outputResult("D://workspace//vis//vis2019//data//scatterplot-orig.json//result//binningresult//"+fileName , results);
-//        outputMSTedge("D://workspace//vis//vis2019//data//scatterplot-orig.json//result//binningOutlierEdges//outlier_"+fileName , outlierEdges);
-
         return results;
     }
 
@@ -684,8 +527,6 @@ public class Scagnostics {
         for (int i = 0; i < px.length; i++) {
             int x = px[i] + (int) (8 * (r.nextDouble() - .5)); // perturb to prevent singularities
             int y = py[i] + (int) (8 * (r.nextDouble() - .5));
-//            int x = px[i];
-//            int y = py[i];
             double count = counts[i];
             if (!isOutlier[i]) {
                 insert(x, y, count, i);
@@ -737,6 +578,7 @@ public class Scagnostics {
         int n75 = n50 + n50 / 2;
         return distances[index[n75]] + 1.5 * (distances[index[n75]] - distances[index[n25]]);
     }
+
     private boolean computeMSTOutliers(double omega) {
         boolean found = false;
         Iterator it = nodes.iterator();
@@ -748,7 +590,6 @@ public class Scagnostics {
             Iterator ie = n.neighbors.iterator();
             while (ie.hasNext()) {
                 Edge e = (Edge) ie.next();
-                //outlier边的判定条件
                 if (e.onMST && e.weight > omega && !e.onOutlier) {
                     found = true;
                     totalMSTOutlierLengths += e.weight;
@@ -780,19 +621,6 @@ public class Scagnostics {
         return Math.min(alpha, 100.);
     }
 
-    private double computeMSTEdgeLengthSkewnessMeasure() {
-        if (sortedOriginalMSTLengths.length == 0)
-            return 0;
-        int n = sortedOriginalMSTLengths.length;
-        int n50 = n / 2;
-        int n10 = n / 10;
-        int n90 = (9 * n) / 10;
-        double skewness = (sortedOriginalMSTLengths[n90] - sortedOriginalMSTLengths[n50]) /
-                (sortedOriginalMSTLengths[n90] - sortedOriginalMSTLengths[n10]);
-        double t = (double) totalCount / 500;
-        double correction = .7 + .3 / (1 + t * t);
-        return 1 - correction * (1 - skewness);
-    }
 
     private double getMeanValue(int start, int end, double[] array) {
         double mean;
@@ -804,7 +632,7 @@ public class Scagnostics {
         return mean;
     }
 
-    private double computeMSTEdgeLengthSkewnessMeasureChange() {
+    private double computeMSTEdgeLengthSkewnessMeasure() {
         if (sortedOriginalMSTLengths.length == 0)
             return 0;
         int n = sortedOriginalMSTLengths.length;
@@ -840,10 +668,6 @@ public class Scagnostics {
     private void computeTotalOriginalMSTLengths() {
         for (int i = 0; i < sortedOriginalMSTLengths.length; i++)
             totalOriginalMSTLengths += sortedOriginalMSTLengths[i];
-    }
-
-    private double computeOutlierMeasure() {
-        return totalMSTOutlierLengths / totalOriginalMSTLengths;
     }
 
     private double[] computeEdgeLengths(Iterator graph, int n) {
@@ -994,7 +818,7 @@ public class Scagnostics {
         }
     }
 
-    private Edge getRuntsAndMaxEdge (double cutoff){
+    private Edge getRuntsAndMaxEdge(double cutoff) {
         Iterator it = mstEdges.iterator();
         double[] maxLength = new double[1];
         double maxValue = 0;
@@ -1024,15 +848,14 @@ public class Scagnostics {
                 }
             }
         }
-        //分堆
         runtsEdges.add(runt_edge);
         maxEdges.add(tmpEdge1);
         maxEdges.add(tmpEdge2);
         maxValues.add(tmp_value);
-//        System.out.println("edge_1="+tmpEdge1+"\tedge_2="+tmpEdge2);
         return runt_edge;
     }
-    private void getRuntsAndMaxEdgeInOneClu (double cutoff){
+
+    private void getRuntsAndMaxEdgeInOneClu() {
         Iterator it = mstEdges.iterator();
         double[] maxLength = new double[1];
         double maxValue = 0;
@@ -1050,10 +873,9 @@ public class Scagnostics {
             e.onMST = false;  // break MST at this edge
             int runts = e.getRunts(maxLength, maxEdge);
             e.onMST = true;   // restore this edge to MST
-            if (maxLength[0] > 0 && runts>1) {
+            if (maxLength[0] > 0 && runts > 1) {
                 double value = runts * (1 - maxLength[0] / e.weight);
-//                double value = 1 - maxLength[0] / e.weight;
-                if (value > maxValue ) {
+                if (value > maxValue) {
                     maxValue = value;
                     tmp_value = (1 - maxLength[0] / e.weight);
                     runt_edge = e;
@@ -1062,13 +884,12 @@ public class Scagnostics {
                 }
             }
         }
-        //分堆
-//        System.out.println("edge_1="+tmpEdge1+"\tedge_2="+tmpEdge2);
         runtsEdges.add(runt_edge);
         maxEdges.add(tmpEdge1);
         maxEdges.add(tmpEdge2);
         maxValues.add(tmp_value);
     }
+
     private void clearVisits() {
         Iterator it = nodes.iterator();
         while (it.hasNext()) {
@@ -1248,17 +1069,6 @@ public class Scagnostics {
         }
     }
 
-    private void setNeighborsforSpecifyNodes() {
-        Iterator it = edges.iterator();
-        while (it.hasNext()) {
-            Edge e = (Edge) it.next();
-            if (e.isNewEdge(e.p1))
-                e.p1.setNeighbor(e);
-            if (e.isNewEdge(e.p2))
-                e.p2.setNeighbor(e);
-        }
-    }
-
     private void insert(int px, int py, double count, int id) {
         int eid;
         Node nd = new Node(px, py, count, id);
@@ -1405,40 +1215,6 @@ public class Scagnostics {
 
                     comedge = e3;
                     triangles.add(new Triangle(edges, e1, e2, e3));
-                    swapTest(e);
-                }
-            } else {
-                if (comedge != null) break;
-                lastbe = e;
-            }
-            e = enext;
-        }
-
-        lastbe.nextH = e3;
-        e3.nextH = e;
-    }
-
-    private void expandHullforSpecifyNode(Node nd, List<Edge> cur_edges, List<Triangle> cur_tris) {
-        Edge e1, e2, e3 = null, enext;
-        Edge e = hullStart;
-        Edge comedge = null, lastbe = null;
-        while (true) {
-            enext = e.nextH;
-            if (e.onSide(nd) == -1) {  // right side
-                if (lastbe != null) {
-                    e1 = e.makeSymm();
-                    e2 = new Edge(e.p1, nd);
-                    e3 = new Edge(nd, e.p2);
-                    if (comedge == null) {
-                        hullStart = lastbe;
-                        lastbe.nextH = e2;
-                        lastbe = e2;
-                    } else
-                        comedge.linkSymm(e2);
-
-
-                    comedge = e3;
-                    cur_tris.add(new Triangle(cur_edges, e1, e2, e3));
                     swapTest(e);
                 }
             } else {
