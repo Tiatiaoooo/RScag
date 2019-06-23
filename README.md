@@ -1,2 +1,2 @@
 # RScag
-code and dataset of our paper submitted to InfoVis2019(Robust Scagnostics)
+Code and dataset of the paper "Improving the Robustness of Scagnostics" sumbitted to IEEE InfoVis 2019.
