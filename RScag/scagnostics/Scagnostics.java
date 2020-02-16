@@ -437,6 +437,10 @@ public class Scagnostics {
 
     private boolean checkSingleClu(int index) {
         boolean isSingleClu = true;
+        if(subCluster[index].size()<10)
+        {
+            return isSingleClu;
+        }
         allOutlierExcept(subCluster[index]);
         clear();
         computeDT(px, py);
