@@ -36,7 +36,7 @@ public class Binner {
 
         int n = x.length;
 
-        int mBins = nBins+20;
+        int mBins = nBins*2;
         int nBin = mBins*mBins;
 
         double[] count = new double[nBin];
@@ -45,11 +45,15 @@ public class Binner {
         Vector<Double>[] x_inbin = new Vector[nBin];
         Vector<Double>[] y_inbin = new Vector[nBin];
 
+        Vector<Double>[] xt_inbin = new Vector[nBin];
+        Vector<Double>[] yt_inbin = new Vector[nBin];
         //ini
         for(int i=0; i<nBin; i++)
         {
             x_inbin[i] = new Vector<Double>();
             y_inbin[i] = new Vector<Double>();
+            xt_inbin[i] = new Vector<Double>();
+            yt_inbin[i] = new Vector<Double>();
         }
         for (int i=0; i<n; i++)
         {
@@ -86,32 +90,49 @@ public class Binner {
         {
             if(x_inbin[i].size()==1)//keep one node
             {
-                xbin[m] = x_inbin[i].get(0);
-                ybin[m] = y_inbin[i].get(0);
-                count[m] = 1;
-                m++;
+                xt_inbin[i].add(x_inbin[i].get(0));
+                yt_inbin[i].add(y_inbin[i].get(0));
+                count[i] = 1;
             }else{
                 int scount = x_inbin[i].size()/scale;
                 if(scount==0)//keep one node
                 {
-                    xbin[m] = x_inbin[i].get(randSelect(x_inbin[i].size(),1)[0]);
-                    ybin[m] = y_inbin[i].get(randSelect(y_inbin[i].size(),1)[0]);
-                    count[m] = x_inbin[i].size();
+                    int index = randSelect(y_inbin[i].size(),1)[0];
+                    xt_inbin[i].add(x_inbin[i].get(index));
+                    yt_inbin[i].add(y_inbin[i].get(index));
+                    count[i] = x_inbin[i].size();
                     m++;
                 }
                 else{//keep scount nodes
                     int[] select = randSelect(x_inbin[i].size(), scount);
                     for(int j=0 ; j<scount ; j++)
                     {
-                        xbin[m] = x_inbin[i].get(select[j]);
-                        ybin[m] = y_inbin[i].get(select[j]);
-                        count[m] = (double)(x_inbin[i].size())/scount;
-                        m++;
+                        xt_inbin[i].add(x_inbin[i].get(select[j]));
+                        yt_inbin[i].add(y_inbin[i].get(select[j]));
                     }
+                    count[i] = (double) x_inbin[i].size()/scount;
                 }
             }
         }
     }
+        int all = getAllData(xt_inbin);
+        if(all>nBin)
+        {
+            scale = (int)(1.5*scale);
+            return binHex(x, y, nBins, scale);
+        }else{
+            int m1=0;
+            for(int i=0; i<xt_inbin.length;i++)
+            {
+                for(int j=0; j<xt_inbin[i].size(); j++)
+                {
+                    xbin[m1] = xt_inbin[i].get(j);
+                    ybin[m1] = yt_inbin[i].get(j);
+                    count[m1] = count[i];
+                    m1++;
+                }
+            }
+        }
         nBin = deleteEmptyBins(count, xbin, ybin);
 
         if (nBin > maxBins) {
@@ -138,6 +159,14 @@ public class Binner {
                 tmp = (int)(Math.random()*n);
             }
             rel[i] = tmp;
+        }
+        return rel;
+    }
+    private int getAllData(Vector<Double>[] v){
+        int rel = 0;
+        for(int i=0; i<v.length; i++)
+        {
+            rel+=v[i].size();
         }
         return rel;
     }
